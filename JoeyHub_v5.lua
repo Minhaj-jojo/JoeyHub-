@@ -30,7 +30,12 @@ local aimbotConn    = nil
 
 -- ── ESP ──
 local espEnabled    = false
-local espData       = {}  -- { [player] = { highlight, billboard } }
+local espData       = {}
+
+-- ── TP ──
+local savedPosition  = nil   -- ตำแหน่งที่จำไว้
+local tweenSpeed     = 10    -- Default Slider=10
+local tweenTPTarget  = nil   -- ผู้เล่นที่จะ tween ไปหา
 
 -- ══════════════════════════════════════
 --         Helper
@@ -261,13 +266,94 @@ local function toggleAimbot(state)
     aimbotEnabled = state
     if state then
         if targetPlayer == nil then
-            -- ยังไม่ได้เลือก target
             aimbotEnabled = false
             return
         end
         startAimbot()
     else
         stopAimbot()
+    end
+end
+
+-- ══════════════════════════════════════
+--     ระบบเล็งผู้เล่นใกล้ที่สุด (Aimbot Near)
+-- ══════════════════════════════════════
+local aimbotNearEnabled = false
+local aimbotNearRange   = 100   -- Default Slider=10 → 10*10=100 studs
+local aimbotNearConn    = nil
+
+-- หาผู้เล่นที่ใกล้ที่สุดในระยะที่กำหนด
+local function getNearestPlayer()
+    local myChr = speaker.Character
+    if not myChr then return nil end
+    local myRoot = myChr:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil end
+
+    local nearest   = nil
+    local nearestDist = aimbotNearRange  -- จะเล็งเฉพาะในระยะ
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr == speaker then continue end
+        local chr  = plr.Character
+        if not chr then continue end
+        local root = chr:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+        -- ตรวจว่า Humanoid ยังมีชีวิต
+        local hum = chr:FindFirstChildWhichIsA("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+
+        local dist = (root.Position - myRoot.Position).Magnitude
+        if dist < nearestDist then
+            nearestDist = dist
+            nearest     = plr
+        end
+    end
+
+    return nearest
+end
+
+local function stopAimbotNear()
+    aimbotNearEnabled = false
+    if aimbotNearConn then aimbotNearConn:Disconnect(); aimbotNearConn = nil end
+end
+
+local function startAimbotNear()
+    if aimbotNearConn then aimbotNearConn:Disconnect(); aimbotNearConn = nil end
+
+    aimbotNearConn = RunService.Heartbeat:Connect(function()
+        if not aimbotNearEnabled then return end
+
+        local myChr = speaker.Character
+        if not myChr then return end
+        local myRoot = myChr:FindFirstChild("HumanoidRootPart")
+        if not myRoot then return end
+
+        -- หาคนใกล้ที่สุดทุก frame
+        local nearPlr = getNearestPlayer()
+        if not nearPlr then return end
+
+        local targetChr  = nearPlr.Character
+        if not targetChr then return end
+        local targetRoot = targetChr:FindFirstChild("HumanoidRootPart")
+        if not targetRoot then return end
+
+        local cam       = workspace.CurrentCamera
+        local myPos     = myRoot.Position
+        local targetPos = targetRoot.Position + Vector3.new(0, 1.5, 0)  -- เล็งที่หัว
+
+        if (targetPos - myPos).Magnitude < 0.1 then return end
+
+        local goalCF = CFrame.lookAt(myPos + Vector3.new(0, 1.5, 0), targetPos)
+        cam.CFrame   = cam.CFrame:Lerp(goalCF, 0.2)
+    end)
+end
+
+local function toggleAimbotNear(state)
+    aimbotNearEnabled = state
+    if state then
+        startAimbotNear()
+    else
+        stopAimbotNear()
     end
 end
 
@@ -372,6 +458,126 @@ end
 Players.PlayerRemoving:Connect(function(plr)
     removeESP(plr)
 end)
+
+-- ══════════════════════════════════════
+--         ระบบ TP (Teleport)
+-- ══════════════════════════════════════
+local TweenService = game:GetService("TweenService")
+
+-- ── บันทึกตำแหน่ง ──
+local function savePosition()
+    local chr = speaker.Character
+    if not chr then return end
+    local hrp = chr:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    savedPosition = hrp.CFrame
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "TP", Text = "บันทึกตำแหน่งแล้ว!", Duration = 2,
+    })
+end
+
+-- ── วาปทันที ──
+local function tpToSaved()
+    if not savedPosition then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "TP", Text = "ยังไม่ได้บันทึกตำแหน่ง!", Duration = 2,
+        })
+        return
+    end
+    local chr = speaker.Character
+    if not chr then return end
+    local hrp = chr:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp.CFrame = savedPosition
+end
+
+-- ── Tween ไปตำแหน่งที่บันทึก ──
+local function tweenToSaved()
+    if not savedPosition then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "TP", Text = "ยังไม่ได้บันทึกตำแหน่ง!", Duration = 2,
+        })
+        return
+    end
+    local chr = speaker.Character
+    if not chr then return end
+    local hrp = chr:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local hum = chr:FindFirstChildWhichIsA("Humanoid")
+
+    -- หยุดการเคลื่อนที่ระหว่าง tween
+    if hum then hum.WalkSpeed = 0 end
+
+    local dist     = (savedPosition.Position - hrp.Position).Magnitude
+    -- tweenSpeed 1-20 → เวลา = dist / (tweenSpeed * 20) วินาที
+    local duration = math.max(dist / (tweenSpeed * 20), 0.3)
+
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+        { CFrame = savedPosition }
+    )
+    tween:Play()
+    tween.Completed:Connect(function()
+        if hum then hum.WalkSpeed = walkEnabled and walkSpeedVal or defaultWalk end
+    end)
+end
+
+-- ── Tween ไปหาผู้เล่น ──
+local function tweenToPlayer(plr)
+    if not plr then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "TP", Text = "ยังไม่ได้เลือกผู้เล่น!", Duration = 2,
+        })
+        return
+    end
+    local myChr = speaker.Character
+    if not myChr then return end
+    local myHRP = myChr:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+    local myHum = myChr:FindFirstChildWhichIsA("Humanoid")
+
+    local targetChr  = plr.Character
+    if not targetChr then return end
+    local targetHRP  = targetChr:FindFirstChild("HumanoidRootPart")
+    if not targetHRP then return end
+
+    local goalCF   = targetHRP.CFrame * CFrame.new(0, 0, 3)  -- ยืนหน้าเป้า
+    local dist     = (goalCF.Position - myHRP.Position).Magnitude
+    local duration = math.max(dist / (tweenSpeed * 20), 0.3)
+
+    if myHum then myHum.WalkSpeed = 0 end
+
+    local tween = TweenService:Create(
+        myHRP,
+        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+        { CFrame = goalCF }
+    )
+    tween:Play()
+    tween.Completed:Connect(function()
+        if myHum then myHum.WalkSpeed = walkEnabled and walkSpeedVal or defaultWalk end
+    end)
+end
+
+-- ── วาปทันทีไปหาผู้เล่น ──
+local function tpToPlayer(plr)
+    if not plr then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "TP", Text = "ยังไม่ได้เลือกผู้เล่น!", Duration = 2,
+        })
+        return
+    end
+    local myChr = speaker.Character
+    if not myChr then return end
+    local myHRP = myChr:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+    local targetChr = plr.Character
+    if not targetChr then return end
+    local targetHRP = targetChr:FindFirstChild("HumanoidRootPart")
+    if not targetHRP then return end
+    myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+end
+
 speaker.CharacterAdded:Connect(function(char)
     task.wait(0.7)
     nowe    = false
@@ -459,6 +665,38 @@ Tab:Slider({
     Callback = function(value) setJumpPower(value) end
 })
 
+-- ── TP ──
+Tab:Button({
+    Title = "Save Position",
+    Desc  = "",
+    Icon  = "map-pin",
+    Callback = function() savePosition() end
+})
+
+Tab:Button({
+    Title = "TP to Saved",
+    Desc  = "",
+    Icon  = "map-pin",
+    Callback = function() tpToSaved() end
+})
+
+Tab:Button({
+    Title = "Tween to Saved",
+    Desc  = "",
+    Icon  = "navigation",
+    Callback = function() tweenToSaved() end
+})
+
+Tab:Slider({
+    Title = "Tween Speed",
+    Desc  = "",
+    Step  = 1,
+    Value = { Min = 1, Max = 20, Default = 10 },
+    Callback = function(value)
+        tweenSpeed = value
+    end
+})
+
 -- ══════════════════════════════════════
 --         Tab Players
 -- ══════════════════════════════════════
@@ -488,34 +726,53 @@ local playerDropdown = Tabtwo:Dropdown({
         end
         local found = Players:FindFirstChild(selectedName)
         targetPlayer = found or nil
-        -- ถ้า aimbot เปิดอยู่ → เริ่มหันไปหา target ใหม่ทันที
         if aimbotEnabled and targetPlayer then
             startAimbot()
         end
     end
 })
 
--- ปุ่ม Refresh รายชื่อ (ใช้ :Set() แทน UpdateValues)
+-- ปุ่ม Refresh
 Tabtwo:Button({
     Title    = "Refresh Player List",
     Desc     = "",
     Icon     = "refresh-cw",
     Callback = function()
-        -- รีเซ็ต target ถ้าผู้เล่นที่เลือกออกไปแล้ว
         if targetPlayer and not Players:FindFirstChild(targetPlayer.Name) then
             targetPlayer = nil
             if aimbotEnabled then stopAimbot() end
         end
-        -- ล้างค่าเดิมแล้วใส่ใหม่ผ่าน Set
-        pcall(function()
-            playerDropdown:Set(getPlayerList())
-        end)
-        -- แจ้งจำนวนผู้เล่นปัจจุบัน
+        pcall(function() playerDropdown:Set(getPlayerList()) end)
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title    = "Player List",
             Text     = "Players in server: " .. tostring(#Players:GetPlayers() - 1),
             Duration = 3,
         })
+    end
+})
+
+-- ── TP ไปหาผู้เล่น ──
+Tabtwo:Button({
+    Title    = "TP to Player",
+    Desc     = "",
+    Icon     = "map-pin",
+    Callback = function() tpToPlayer(targetPlayer) end
+})
+
+Tabtwo:Button({
+    Title    = "Tween to Player",
+    Desc     = "",
+    Icon     = "navigation",
+    Callback = function() tweenToPlayer(targetPlayer) end
+})
+
+Tabtwo:Slider({
+    Title = "Tween Speed",
+    Desc  = "",
+    Step  = 1,
+    Value = { Min = 1, Max = 20, Default = 10 },
+    Callback = function(value)
+        tweenSpeed = value
     end
 })
 
@@ -536,6 +793,29 @@ Tabtwo:Toggle({
             return
         end
         toggleAimbot(state)
+    end
+})
+
+-- Toggle Aimbot Near
+Tabtwo:Toggle({
+    Title    = "Aimbot Near",
+    Desc     = "",
+    Icon     = "crosshair",
+    Type     = "Checkbox",
+    Value    = false,
+    Callback = function(state)
+        toggleAimbotNear(state)
+    end
+})
+
+-- Slider ระยะ Aimbot Near
+Tabtwo:Slider({
+    Title = "Range",
+    Desc  = "",
+    Step  = 1,
+    Value = { Min = 1, Max = 20, Default = 10 },
+    Callback = function(value)
+        aimbotNearRange = value * 10  -- 1-20 → 10-200 studs
     end
 })
 
