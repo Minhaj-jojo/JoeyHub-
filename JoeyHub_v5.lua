@@ -33,9 +33,120 @@ local espEnabled    = false
 local espData       = {}
 
 -- ── TP ──
-local savedPosition  = nil   -- ตำแหน่งที่จำไว้
-local tweenSpeed     = 10    -- Default Slider=10
-local tweenTPTarget  = nil   -- ผู้เล่นที่จะ tween ไปหา
+local savedPosition  = nil
+local tweenSpeed     = 10
+local tweenTPTarget  = nil
+
+-- ── สี ──
+local espFillColor    = Color3.fromRGB(255, 0, 0)      -- สี fill ESP
+local espOutlineColor = Color3.fromRGB(255, 80, 80)    -- สีขอบ ESP
+local guiAccentColor  = Color3.fromHex("0f7bff")       -- สี accent GUI
+
+-- ── ภาษา ──
+local currentLang = "EN"  -- EN / TH / KH
+
+local LANG = {
+    EN = {
+        -- Window
+        windowTitle  = "Joey Hub",
+        windowAuthor = "by MINHAJ",
+        tagTitle     = "v1",
+        -- Main Tab
+        tabMain      = "Main",
+        fly          = "Fly",
+        flySpeed     = "Fly Speed",
+        walkSpeed    = "Walk Speed",
+        walkSpeedVal = "Walk Speed Value",
+        highJump     = "High Jump",
+        jumpPower    = "Jump Power",
+        savePos      = "Save Position",
+        tpSaved      = "TP to Saved",
+        tweenSaved   = "Tween to Saved",
+        tweenSpeed   = "Tween Speed",
+        -- Players Tab
+        tabPlayers   = "Players",
+        selectPlayer = "Select Player",
+        refreshList  = "Refresh Player List",
+        aimbot       = "Aimbot",
+        aimbotNear   = "Aimbot Near",
+        range        = "Range",
+        espPlayers   = "ESP Players",
+        espColor     = "ESP Color",
+        tpPlayer     = "TP to Player",
+        tweenPlayer  = "Tween to Player",
+        tweenSpeedP  = "Tween Speed",
+        -- Settings Tab
+        tabSettings  = "Settings",
+        fpsBoost     = "FPS Boost",
+        guiColor     = "GUI Accent Color",
+        langSelect   = "Language",
+        resetGUI     = "Reset GUI (Apply Language)",
+    },
+    TH = {
+        windowTitle  = "Joey Hub",
+        windowAuthor = "โดย MINHAJ",
+        tagTitle     = "v1",
+        tabMain      = "หลัก",
+        fly          = "บิน",
+        flySpeed     = "ความเร็วบิน",
+        walkSpeed    = "วิ่งเร็ว",
+        walkSpeedVal = "ค่าความเร็วเดิน",
+        highJump     = "กระโดดสูง",
+        jumpPower    = "แรงกระโดด",
+        savePos      = "บันทึกตำแหน่ง",
+        tpSaved      = "วาปไปตำแหน่งที่บันทึก",
+        tweenSaved   = "เคลื่อนที่ไปตำแหน่งที่บันทึก",
+        tweenSpeed   = "ความเร็ว Tween",
+        tabPlayers   = "ผู้เล่น",
+        selectPlayer = "เลือกผู้เล่น",
+        refreshList  = "รีเฟรชรายชื่อผู้เล่น",
+        aimbot       = "เล็งอัตโนมัติ",
+        aimbotNear   = "เล็งคนใกล้ที่สุด",
+        range        = "ระยะ",
+        espPlayers   = "มองทะลุผู้เล่น",
+        espColor     = "สี ESP",
+        tpPlayer     = "วาปไปหาผู้เล่น",
+        tweenPlayer  = "เคลื่อนที่ไปหาผู้เล่น",
+        tweenSpeedP  = "ความเร็ว Tween",
+        tabSettings  = "ตั้งค่า",
+        fpsBoost     = "เพิ่ม FPS",
+        guiColor     = "สีหลักของ GUI",
+        langSelect   = "ภาษา",
+        resetGUI     = "รีเซ็ต GUI (ใช้ภาษาที่เลือก)",
+    },
+    KH = {
+        windowTitle  = "Joey Hub",
+        windowAuthor = "ដោយ MINHAJ",
+        tagTitle     = "v1",
+        tabMain      = "មេ",
+        fly          = "ហោះ",
+        flySpeed     = "ល្បឿនហោះ",
+        walkSpeed    = "ដើរលឿន",
+        walkSpeedVal = "តម្លៃល្បឿនដើរ",
+        highJump     = "លោតខ្ពស់",
+        jumpPower    = "កម្លាំងលោត",
+        savePos      = "រក្សាទីតាំង",
+        tpSaved      = "TP ទៅទីតាំងដែលបានរក្សា",
+        tweenSaved   = "រំកិលទៅទីតាំងដែលបានរក្សា",
+        tweenSpeed   = "ល្បឿន Tween",
+        tabPlayers   = "អ្នកលេង",
+        selectPlayer = "ជ្រើសរើសអ្នកលេង",
+        refreshList  = "ធ្វើតារាងអ្នកលេងឡើងវិញ",
+        aimbot       = "កំណត់គោលដៅ",
+        aimbotNear   = "កំណត់គោលដៅជិតបំផុត",
+        range        = "ចម្ងាយ",
+        espPlayers   = "មើលអ្នកលេងតាមរយៈជញ្ជាំង",
+        espColor     = "ពណ៌ ESP",
+        tpPlayer     = "TP ទៅអ្នកលេង",
+        tweenPlayer  = "រំកិលទៅអ្នកលេង",
+        tweenSpeedP  = "ល្បឿន Tween",
+        tabSettings  = "ការកំណត់",
+        fpsBoost     = "បង្កើន FPS",
+        guiColor     = "ពណ៌ GUI",
+        langSelect   = "ភាសា",
+        resetGUI     = "កំណត់ GUI ឡើងវិញ (អនុវត្តភាសា)",
+    },
+}
 
 -- ══════════════════════════════════════
 --         Helper
@@ -369,15 +480,15 @@ local function addESP(plr)
     local chr = plr.Character
     if not chr then return end
 
-    -- Highlight = กรอบแดงมองทะลุกำแพง
+    -- Highlight = กรอบมองทะลุกำแพง
     local hl = Instance.new("Highlight")
-    hl.Name            = "ESP_Highlight"
-    hl.FillColor       = Color3.fromRGB(255, 0, 0)
-    hl.OutlineColor    = Color3.fromRGB(255, 80, 80)
+    hl.Name                = "ESP_Highlight"
+    hl.FillColor           = espFillColor
+    hl.OutlineColor        = espOutlineColor
     hl.FillTransparency    = 0.55
     hl.OutlineTransparency = 0
-    hl.DepthMode       = Enum.HighlightDepthMode.AlwaysOnTop  -- มองทะลุกำแพง
-    hl.Parent          = chr
+    hl.DepthMode           = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent              = chr
 
     -- BillboardGui = ชื่อเหนือหัว
     local hrp = chr:FindFirstChild("HumanoidRootPart") or chr:FindFirstChild("Torso") or chr:FindFirstChild("UpperTorso")
@@ -392,15 +503,15 @@ local function addESP(plr)
         bb.Parent        = hrp
 
         local nameLabel = Instance.new("TextLabel", bb)
-        nameLabel.Size              = UDim2.new(1, 0, 1, 0)
+        nameLabel.Size                   = UDim2.new(1, 0, 1, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Text              = plr.Name
-        nameLabel.TextColor3        = Color3.fromRGB(255, 80, 80)
-        nameLabel.TextStrokeColor3  = Color3.fromRGB(0, 0, 0)
+        nameLabel.Text                   = plr.Name
+        nameLabel.TextColor3             = espOutlineColor
+        nameLabel.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
         nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextSize          = 15
-        nameLabel.Font              = Enum.Font.GothamBold
-        nameLabel.TextScaled        = false
+        nameLabel.TextSize               = 15
+        nameLabel.Font                   = Enum.Font.GothamBold
+        nameLabel.TextScaled             = false
     end
 
     espData[plr] = { highlight = hl, billboard = bb }
@@ -598,368 +709,251 @@ speaker.CharacterAdded:Connect(function(char)
 end)
 
 -- ══════════════════════════════════════
---              WindUI
+--         buildGUI (เรียกซ้ำได้)
 -- ══════════════════════════════════════
-local Window = WindUI:CreateWindow({
-    Title  = "Joey Hub",
-    Icon   = "bird",
-    Author = "by MINHAJ",
-})
+local WindUI    -- ประกาศ upvalue ให้ buildGUI อัปเดตได้
 
-Window:EditOpenButton({
-    Title           = "JoeyHub",
-    Icon            = "monitor",
-    CornerRadius    = UDim.new(0, 16),
-    StrokeThickness = 2,
-    Color           = ColorSequence.new(
-        Color3.fromHex("0f7bff"),
-        Color3.fromHex("0ff3ff")
-    ),
-    OnlyMobile = false,
-    Enabled    = true,
-    Draggable  = true,
-})
+local function buildGUI()
+    local L = LANG[currentLang]
 
-Window:Tag({
-    Title  = "v1",
-    Icon   = "bird",
-    Color  = Color3.fromHex("#30ff6a"),
-    Radius = 13,
-})
-
--- ══════════════════════════════════════
---         Tab Main
--- ══════════════════════════════════════
-local Tab = Window:Tab({ Title = "Main", Icon = "book", Locked = false })
-
-Tab:Toggle({
-    Title = "Fly", Desc = "", Icon = "bird", Type = "Checkbox", Value = false,
-    Callback = function(state) toggleFly(state) end
-})
-
-Tab:Slider({
-    Title = "Fly Speed", Desc = "", Step = 1,
-    Value = { Min = 1, Max = 50, Default = 10 },
-    Callback = function(value) flySpeed = value * 5 end
-})
-
-Tab:Toggle({
-    Title = "Walk Speed", Desc = "", Icon = "person-standing", Type = "Checkbox", Value = false,
-    Callback = function(state) toggleWalk(state) end
-})
-
-Tab:Slider({
-    Title = "Walk Speed Value", Desc = "", Step = 1,
-    Value = { Min = 1, Max = 50, Default = 5 },
-    Callback = function(value) setWalkSpeed(value) end
-})
-
-Tab:Toggle({
-    Title = "High Jump", Desc = "", Icon = "arrow-up", Type = "Checkbox", Value = false,
-    Callback = function(state) toggleJump(state) end
-})
-
-Tab:Slider({
-    Title = "Jump Power", Desc = "", Step = 1,
-    Value = { Min = 1, Max = 50, Default = 5 },
-    Callback = function(value) setJumpPower(value) end
-})
-
--- ── TP ──
-Tab:Button({
-    Title = "Save Position",
-    Desc  = "",
-    Icon  = "map-pin",
-    Callback = function() savePosition() end
-})
-
-Tab:Button({
-    Title = "TP to Saved",
-    Desc  = "",
-    Icon  = "map-pin",
-    Callback = function() tpToSaved() end
-})
-
-Tab:Button({
-    Title = "Tween to Saved",
-    Desc  = "",
-    Icon  = "navigation",
-    Callback = function() tweenToSaved() end
-})
-
-Tab:Slider({
-    Title = "Tween Speed",
-    Desc  = "",
-    Step  = 1,
-    Value = { Min = 1, Max = 20, Default = 10 },
-    Callback = function(value)
-        tweenSpeed = value
-    end
-})
-
--- ══════════════════════════════════════
---         Tab Players
--- ══════════════════════════════════════
-local Tabtwo = Window:Tab({ Title = "Players", Icon = "user", Locked = false })
-
--- ── สร้างรายชื่อผู้เล่น ──
-local function getPlayerList()
-    local list = {}
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= speaker then
-            table.insert(list, plr.Name)
+    -- ── ลบ GUI เก่าออกทั้งหมด ──
+    for _, v in ipairs(speaker.PlayerGui:GetChildren()) do
+        if v:IsA("ScreenGui") then
+            v:Destroy()
         end
     end
-    return list
-end
+    task.wait(0.1)
 
--- Dropdown เลือกชื่อผู้เล่น
-local playerDropdown = Tabtwo:Dropdown({
-    Title    = "Select Player",
-    Desc     = "",
-    Values   = getPlayerList(),
-    Value    = "",
-    Callback = function(selectedName)
-        if not selectedName or selectedName == "" then
-            targetPlayer = nil
-            return
+    -- ── โหลด WindUI ใหม่ ──
+    WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+    -- ── สร้าง Window ──
+    local Window = WindUI:CreateWindow({
+        Title  = L.windowTitle,
+        Icon   = "bird",
+        Author = L.windowAuthor,
+    })
+
+    Window:EditOpenButton({
+        Title           = "JoeyHub",
+        Icon            = "monitor",
+        CornerRadius    = UDim.new(0, 16),
+        StrokeThickness = 2,
+        Color           = ColorSequence.new(
+            Color3.fromHex("0f7bff"),
+            Color3.fromHex("0ff3ff")
+        ),
+        OnlyMobile = false, Enabled = true, Draggable = true,
+    })
+
+    Window:Tag({ Title=L.tagTitle, Icon="bird", Color=Color3.fromHex("#30ff6a"), Radius=13 })
+
+    -- ════ Tab Main ════
+    local Tab = Window:Tab({ Title=L.tabMain, Icon="book", Locked=false })
+
+    Tab:Toggle({ Title=L.fly,         Desc="", Icon="bird",            Type="Checkbox", Value=false, Callback=function(s) toggleFly(s) end })
+    Tab:Slider({ Title=L.flySpeed,    Desc="", Step=1, Value={Min=1,Max=50,Default=10}, Callback=function(v) flySpeed=v*5 end })
+    Tab:Toggle({ Title=L.walkSpeed,   Desc="", Icon="person-standing", Type="Checkbox", Value=false, Callback=function(s) toggleWalk(s) end })
+    Tab:Slider({ Title=L.walkSpeedVal,Desc="", Step=1, Value={Min=1,Max=50,Default=5},  Callback=function(v) setWalkSpeed(v) end })
+    Tab:Toggle({ Title=L.highJump,    Desc="", Icon="arrow-up",        Type="Checkbox", Value=false, Callback=function(s) toggleJump(s) end })
+    Tab:Slider({ Title=L.jumpPower,   Desc="", Step=1, Value={Min=1,Max=50,Default=5},  Callback=function(v) setJumpPower(v) end })
+    Tab:Button({ Title=L.savePos,     Desc="", Icon="map-pin",    Callback=function() savePosition() end })
+    Tab:Button({ Title=L.tpSaved,     Desc="", Icon="map-pin",    Callback=function() tpToSaved() end })
+    Tab:Button({ Title=L.tweenSaved,  Desc="", Icon="navigation", Callback=function() tweenToSaved() end })
+    Tab:Slider({ Title=L.tweenSpeed,  Desc="", Step=1, Value={Min=1,Max=20,Default=10}, Callback=function(v) tweenSpeed=v end })
+
+    -- ════ Tab Players ════
+    local Tabtwo = Window:Tab({ Title=L.tabPlayers, Icon="user", Locked=false })
+
+    local function getPlayerList()
+        local list = {}
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= speaker then table.insert(list, plr.Name) end
         end
-        local found = Players:FindFirstChild(selectedName)
-        targetPlayer = found or nil
-        if aimbotEnabled and targetPlayer then
-            startAimbot()
+        return list
+    end
+
+    local playerDropdown = Tabtwo:Dropdown({
+        Title=L.selectPlayer, Desc="", Values=getPlayerList(), Value="",
+        Callback=function(n)
+            if not n or n=="" then targetPlayer=nil return end
+            local f = Players:FindFirstChild(n)
+            targetPlayer = f or nil
+            if aimbotEnabled and targetPlayer then startAimbot() end
         end
-    end
-})
+    })
 
--- ปุ่ม Refresh
-Tabtwo:Button({
-    Title    = "Refresh Player List",
-    Desc     = "",
-    Icon     = "refresh-cw",
-    Callback = function()
-        if targetPlayer and not Players:FindFirstChild(targetPlayer.Name) then
-            targetPlayer = nil
-            if aimbotEnabled then stopAimbot() end
-        end
-        pcall(function() playerDropdown:Set(getPlayerList()) end)
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title    = "Player List",
-            Text     = "Players in server: " .. tostring(#Players:GetPlayers() - 1),
-            Duration = 3,
-        })
-    end
-})
-
--- ── TP ไปหาผู้เล่น ──
-Tabtwo:Button({
-    Title    = "TP to Player",
-    Desc     = "",
-    Icon     = "map-pin",
-    Callback = function() tpToPlayer(targetPlayer) end
-})
-
-Tabtwo:Button({
-    Title    = "Tween to Player",
-    Desc     = "",
-    Icon     = "navigation",
-    Callback = function() tweenToPlayer(targetPlayer) end
-})
-
-Tabtwo:Slider({
-    Title = "Tween Speed",
-    Desc  = "",
-    Step  = 1,
-    Value = { Min = 1, Max = 20, Default = 10 },
-    Callback = function(value)
-        tweenSpeed = value
-    end
-})
-
--- Toggle Aimbot
-Tabtwo:Toggle({
-    Title    = "Aimbot",
-    Desc     = "",
-    Icon     = "crosshair",
-    Type     = "Checkbox",
-    Value    = false,
-    Callback = function(state)
-        if state and targetPlayer == nil then
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title    = "Aimbot",
-                Text     = "กรุณาเลือกชื่อผู้เล่นก่อน!",
-                Duration = 3,
+    Tabtwo:Button({ Title=L.refreshList, Desc="", Icon="refresh-cw",
+        Callback=function()
+            if targetPlayer and not Players:FindFirstChild(targetPlayer.Name) then
+                targetPlayer=nil
+                if aimbotEnabled then stopAimbot() end
+            end
+            pcall(function() playerDropdown:Set(getPlayerList()) end)
+            game:GetService("StarterGui"):SetCore("SendNotification",{
+                Title="Players", Text=tostring(#Players:GetPlayers()-1).." players", Duration=2,
             })
-            return
         end
-        toggleAimbot(state)
-    end
-})
+    })
 
--- Toggle Aimbot Near
-Tabtwo:Toggle({
-    Title    = "Aimbot Near",
-    Desc     = "",
-    Icon     = "crosshair",
-    Type     = "Checkbox",
-    Value    = false,
-    Callback = function(state)
-        toggleAimbotNear(state)
-    end
-})
+    Tabtwo:Button({ Title=L.tpPlayer,   Desc="", Icon="map-pin",   Callback=function() tpToPlayer(targetPlayer) end })
+    Tabtwo:Button({ Title=L.tweenPlayer,Desc="", Icon="navigation", Callback=function() tweenToPlayer(targetPlayer) end })
+    Tabtwo:Slider({ Title=L.tweenSpeedP,Desc="", Step=1, Value={Min=1,Max=20,Default=10}, Callback=function(v) tweenSpeed=v end })
 
--- Slider ระยะ Aimbot Near
-Tabtwo:Slider({
-    Title = "Range",
-    Desc  = "",
-    Step  = 1,
-    Value = { Min = 1, Max = 20, Default = 10 },
-    Callback = function(value)
-        aimbotNearRange = value * 10  -- 1-20 → 10-200 studs
-    end
-})
-
--- ถ้าผู้เล่นที่กำลัง aim ออกจากเกม → หยุด aimbot อัตโนมัติ
-Players.PlayerRemoving:Connect(function(plr)
-    if targetPlayer and targetPlayer == plr then
-        targetPlayer = nil
-        if aimbotEnabled then stopAimbot() end
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title    = "Aimbot",
-            Text     = "Target ออกจากเกมแล้ว",
-            Duration = 3,
-        })
-    end
-end)
-
--- Toggle ESP
-Tabtwo:Toggle({
-    Title    = "ESP Players",
-    Desc     = "",
-    Icon     = "eye",
-    Type     = "Checkbox",
-    Value    = false,
-    Callback = function(state)
-        toggleESP(state)
-    end
-})
-
--- ══════════════════════════════════════
---         Tab Settings
--- ══════════════════════════════════════
-local Tabthree = Window:Tab({ Title = "Settings", Icon = "settings", Locked = false })
-
--- ── ระบบ FPS Boost ──
-local fpsEnabled   = false
-local Lighting     = game:GetService("Lighting")
-local savedData    = {}  -- เก็บค่าเดิมของ part ไว้ restore
-
-local function applyFPSBoost()
-    -- ── 1. Lighting ──
-    savedData.Brightness          = Lighting.Brightness
-    savedData.GlobalShadows       = Lighting.GlobalShadows
-    savedData.FogEnd              = Lighting.FogEnd
-
-    Lighting.GlobalShadows        = false   -- ลบเงาทั้งหมด
-    Lighting.Brightness           = 2       -- แสงสว่างขึ้น (ไม่ต้องคำนวณแสง)
-    Lighting.FogEnd               = 100000  -- ลบหมอก
-
-    -- ลบ Effects ใน Lighting (Bloom, Blur, etc.)
-    for _, effect in ipairs(Lighting:GetChildren()) do
-        if effect:IsA("PostEffect") or effect:IsA("Sky") then
-            effect.Enabled = false
+    Tabtwo:Toggle({ Title=L.aimbot, Desc="", Icon="crosshair", Type="Checkbox", Value=false,
+        Callback=function(s)
+            if s and targetPlayer==nil then
+                game:GetService("StarterGui"):SetCore("SendNotification",{
+                    Title="Aimbot", Text="กรุณาเลือกผู้เล่นก่อน!", Duration=3,
+                })
+                return
+            end
+            toggleAimbot(s)
         end
-    end
+    })
+    Tabtwo:Toggle({ Title=L.aimbotNear, Desc="", Icon="crosshair", Type="Checkbox", Value=false, Callback=function(s) toggleAimbotNear(s) end })
+    Tabtwo:Slider({ Title=L.range,      Desc="", Step=1, Value={Min=1,Max=20,Default=10}, Callback=function(v) aimbotNearRange=v*10 end })
+    Tabtwo:Toggle({ Title=L.espPlayers, Desc="", Icon="eye", Type="Checkbox", Value=false, Callback=function(s) toggleESP(s) end })
 
-    -- ── 2. Workspace ──
-    workspace.StreamingEnabled = false  -- ปิด streaming ถ้าทำได้
-    pcall(function()
-        workspace.Terrain.WaterWaveSize     = 0
-        workspace.Terrain.WaterWaveSpeed    = 0
-        workspace.Terrain.WaterReflectance  = 0
-        workspace.Terrain.WaterTransparency = 0
-        workspace.Terrain.Decoration        = false
+    Tabtwo:ColorPicker({
+        Title    = L.espColor,
+        Desc     = "",
+        Value    = espFillColor,
+        Callback = function(color)
+            espFillColor    = color
+            -- ปรับ outline ให้สว่างกว่า fill เล็กน้อย
+            espOutlineColor = Color3.new(
+                math.min(color.R + 0.2, 1),
+                math.min(color.G + 0.2, 1),
+                math.min(color.B + 0.2, 1)
+            )
+            -- อัปเดต ESP ที่เปิดอยู่ทันที
+            for plr, data in pairs(espData) do
+                if data.highlight then
+                    data.highlight.FillColor    = espFillColor
+                    data.highlight.OutlineColor = espOutlineColor
+                end
+                if data.billboard then
+                    local lbl = data.billboard:FindFirstChildOfClass("TextLabel")
+                    if lbl then lbl.TextColor3 = espOutlineColor end
+                end
+            end
+        end
+    })
+
+    Players.PlayerRemoving:Connect(function(plr)
+        if targetPlayer and targetPlayer==plr then
+            targetPlayer=nil
+            if aimbotEnabled then stopAimbot() end
+            game:GetService("StarterGui"):SetCore("SendNotification",{Title="Aimbot",Text="Target ออกจากเกม",Duration=3})
+        end
     end)
 
-    -- ── 3. เปลี่ยน Material + ลบเงาของ Part ทั้งหมด ──
-    local count = 0
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and not obj:IsA("Terrain") then
-            -- เก็บค่าเดิม (เก็บแค่ index เพื่อไม่กิน memory มาก)
-            savedData[obj] = {
-                Material    = obj.Material,
-                CastShadow  = obj.CastShadow,
-                Reflectance = obj.Reflectance,
-            }
-            obj.Material    = Enum.Material.SmoothPlastic  -- เปลี่ยนเป็น plastic
-            obj.CastShadow  = false                        -- ลบเงา
-            obj.Reflectance = 0                            -- ไม่สะท้อนแสง
-            count = count + 1
-            -- yield ทุก 200 part เพื่อไม่ freeze เกม
-            if count % 200 == 0 then task.wait() end
+    -- ════ Tab Settings ════
+    local Tabthree = Window:Tab({ Title=L.tabSettings, Icon="settings", Locked=false })
+
+    -- FPS Boost
+    local fpsEnabled = false
+    local Lighting   = game:GetService("Lighting")
+    local savedData  = {}
+
+    local function applyFPSBoost()
+        savedData.Brightness    = Lighting.Brightness
+        savedData.GlobalShadows = Lighting.GlobalShadows
+        savedData.FogEnd        = Lighting.FogEnd
+        Lighting.GlobalShadows  = false
+        Lighting.Brightness     = 2
+        Lighting.FogEnd         = 100000
+        for _, e in ipairs(Lighting:GetChildren()) do
+            if e:IsA("PostEffect") or e:IsA("Sky") then e.Enabled=false end
         end
+        pcall(function()
+            workspace.Terrain.WaterWaveSize=0; workspace.Terrain.WaterWaveSpeed=0
+            workspace.Terrain.WaterReflectance=0; workspace.Terrain.Decoration=false
+        end)
+        local count=0
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and not obj:IsA("Terrain") then
+                savedData[obj]={Material=obj.Material,CastShadow=obj.CastShadow,Reflectance=obj.Reflectance}
+                obj.Material=Enum.Material.SmoothPlastic; obj.CastShadow=false; obj.Reflectance=0
+                count=count+1
+                if count%200==0 then task.wait() end
+            end
+        end
+        game:GetService("StarterGui"):SetCore("SendNotification",{Title="FPS Boost",Text="เปิดแล้ว! ("..count.." parts)",Duration=4})
     end
 
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title    = "FPS Boost",
-        Text     = "เปิดใช้งานแล้ว! (" .. count .. " parts)",
-        Duration = 4,
+    local function removeFPSBoost()
+        if savedData.GlobalShadows~=nil then
+            Lighting.GlobalShadows=savedData.GlobalShadows
+            Lighting.Brightness=savedData.Brightness
+            Lighting.FogEnd=savedData.FogEnd
+        end
+        for _, e in ipairs(Lighting:GetChildren()) do
+            if e:IsA("PostEffect") or e:IsA("Sky") then e.Enabled=true end
+        end
+        pcall(function() workspace.Terrain.Decoration=true end)
+        local count=0
+        for obj, data in pairs(savedData) do
+            if typeof(obj)=="Instance" and obj:IsA("BasePart") then
+                pcall(function() obj.Material=data.Material; obj.CastShadow=data.CastShadow; obj.Reflectance=data.Reflectance end)
+                count=count+1
+                if count%200==0 then task.wait() end
+            end
+        end
+        savedData={}
+        game:GetService("StarterGui"):SetCore("SendNotification",{Title="FPS Boost",Text="ปิดแล้ว",Duration=3})
+    end
+
+    Tabthree:Toggle({ Title=L.fpsBoost, Desc="", Icon="zap", Type="Checkbox", Value=false,
+        Callback=function(s)
+            fpsEnabled=s
+            if s then task.spawn(applyFPSBoost) else task.spawn(removeFPSBoost) end
+        end
     })
-end
 
-local function removeFPSBoost()
-    -- ── คืน Lighting ──
-    if savedData.GlobalShadows ~= nil then
-        Lighting.GlobalShadows = savedData.GlobalShadows
-        Lighting.Brightness    = savedData.Brightness
-        Lighting.FogEnd        = savedData.FogEnd
-    end
-    for _, effect in ipairs(Lighting:GetChildren()) do
-        if effect:IsA("PostEffect") or effect:IsA("Sky") then
-            effect.Enabled = true
+    -- GUI Accent ColorPicker
+    Tabthree:ColorPicker({
+        Title    = L.guiColor,
+        Desc     = "",
+        Value    = guiAccentColor,
+        Callback = function(color)
+            guiAccentColor = color
+            -- อัปเดต OpenButton สีใหม่ทันที
+            Window:EditOpenButton({
+                Title           = "JoeyHub",
+                Icon            = "monitor",
+                CornerRadius    = UDim.new(0, 16),
+                StrokeThickness = 2,
+                Color           = ColorSequence.new(color, color),
+                OnlyMobile = false, Enabled = true, Draggable = true,
+            })
         end
-    end
-    pcall(function() workspace.Terrain.Decoration = true end)
+    })
 
-    -- ── คืน Part ──
-    local count = 0
-    for obj, data in pairs(savedData) do
-        if typeof(obj) == "Instance" and obj:IsA("BasePart") then
-            pcall(function()
-                obj.Material    = data.Material
-                obj.CastShadow  = data.CastShadow
-                obj.Reflectance = data.Reflectance
+    -- Language Dropdown
+    local langMap = { English="EN", ["ภาษาไทย"]="TH", ["ភាសាខ្មែរ"]="KH" }
+    local langDefault = currentLang=="TH" and "ภาษาไทย" or currentLang=="KH" and "ភាសាខ្មែរ" or "English"
+
+    Tabthree:Dropdown({
+        Title=L.langSelect, Desc="", Values={"English","ภาษาไทย","ភាសាខ្មែរ"}, Value=langDefault,
+        Callback=function(val) currentLang = langMap[val] or "EN" end
+    })
+
+    -- Reset GUI Button
+    Tabthree:Button({
+        Title=L.resetGUI, Desc="", Icon="refresh-cw",
+        Callback=function()
+            task.spawn(function()
+                task.wait(0.1)
+                buildGUI()  -- เรียก rebuild ด้วยภาษาใหม่
+                game:GetService("StarterGui"):SetCore("SendNotification",{
+                    Title="GUI", Text="เปลี่ยนภาษาเรียบร้อย!", Duration=3,
+                })
             end)
-            count = count + 1
-            if count % 200 == 0 then task.wait() end
         end
-    end
-
-    -- ล้าง table
-    savedData = {}
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title    = "FPS Boost",
-        Text     = "ปิดและคืนค่าเดิมแล้ว",
-        Duration = 3,
     })
 end
 
-local function toggleFPSBoost(state)
-    fpsEnabled = state
-    if state then
-        task.spawn(applyFPSBoost)
-    else
-        task.spawn(removeFPSBoost)
-    end
-end
-
-Tabthree:Toggle({
-    Title    = "FPS Boost",
-    Desc     = "",
-    Icon     = "zap",
-    Type     = "Checkbox",
-    Value    = false,
-    Callback = function(state)
-        toggleFPSBoost(state)
-    end
-})
+-- ── เรียก buildGUI ครั้งแรก ──
+buildGUI()
