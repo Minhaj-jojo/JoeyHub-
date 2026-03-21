@@ -815,20 +815,29 @@ local function buildGUI()
     Tabtwo:Slider({ Title=L.range,      Desc="", Step=1, Value={Min=1,Max=20,Default=10}, Callback=function(v) aimbotNearRange=v*10 end })
     Tabtwo:Toggle({ Title=L.espPlayers, Desc="", Icon="eye", Type="Checkbox", Value=false, Callback=function(s) toggleESP(s) end })
 
-    Tabtwo:ColorPicker({
+    -- ESP Color Dropdown
+    local espColorMap = {
+        ["🔴 Red"]    = {Color3.fromRGB(255,50,50),   Color3.fromRGB(255,120,120)},
+        ["🟠 Orange"] = {Color3.fromRGB(255,140,0),   Color3.fromRGB(255,190,80)},
+        ["🟡 Yellow"] = {Color3.fromRGB(255,220,0),   Color3.fromRGB(255,240,100)},
+        ["🟢 Green"]  = {Color3.fromRGB(0,200,80),    Color3.fromRGB(80,255,140)},
+        ["🔵 Blue"]   = {Color3.fromRGB(0,120,255),   Color3.fromRGB(80,180,255)},
+        ["🟣 Purple"] = {Color3.fromRGB(160,0,255),   Color3.fromRGB(200,80,255)},
+        ["⚪ White"]  = {Color3.fromRGB(220,220,220), Color3.fromRGB(255,255,255)},
+        ["⚫ Black"]  = {Color3.fromRGB(30,30,30),    Color3.fromRGB(80,80,80)},
+    }
+    Tabtwo:Dropdown({
         Title    = L.espColor,
         Desc     = "",
-        Value    = espFillColor,
-        Callback = function(color)
-            espFillColor    = color
-            -- ปรับ outline ให้สว่างกว่า fill เล็กน้อย
-            espOutlineColor = Color3.new(
-                math.min(color.R + 0.2, 1),
-                math.min(color.G + 0.2, 1),
-                math.min(color.B + 0.2, 1)
-            )
+        Values   = {"🔴 Red","🟠 Orange","🟡 Yellow","🟢 Green","🔵 Blue","🟣 Purple","⚪ White","⚫ Black"},
+        Value    = "🔴 Red",
+        Callback = function(val)
+            local cols = espColorMap[val]
+            if not cols then return end
+            espFillColor    = cols[1]
+            espOutlineColor = cols[2]
             -- อัปเดต ESP ที่เปิดอยู่ทันที
-            for plr, data in pairs(espData) do
+            for _, data in pairs(espData) do
                 if data.highlight then
                     data.highlight.FillColor    = espFillColor
                     data.highlight.OutlineColor = espOutlineColor
@@ -912,20 +921,32 @@ local function buildGUI()
         end
     })
 
-    -- GUI Accent ColorPicker
-    Tabthree:ColorPicker({
+    -- GUI Accent Color Dropdown
+    local guiColorMap = {
+        ["🔵 Blue"]   = {Color3.fromHex("0f7bff"), Color3.fromHex("0ff3ff")},
+        ["🔴 Red"]    = {Color3.fromRGB(220,50,50),  Color3.fromRGB(255,100,100)},
+        ["🟢 Green"]  = {Color3.fromRGB(0,180,80),   Color3.fromRGB(0,240,140)},
+        ["🟣 Purple"] = {Color3.fromRGB(140,0,255),  Color3.fromRGB(200,80,255)},
+        ["🟠 Orange"] = {Color3.fromRGB(255,120,0),  Color3.fromRGB(255,200,0)},
+        ["⚪ White"]  = {Color3.fromRGB(200,200,200),Color3.fromRGB(255,255,255)},
+        ["🩷 Pink"]   = {Color3.fromRGB(255,60,150), Color3.fromRGB(255,140,200)},
+        ["🩵 Cyan"]   = {Color3.fromRGB(0,200,220),  Color3.fromRGB(80,240,255)},
+    }
+    Tabthree:Dropdown({
         Title    = L.guiColor,
         Desc     = "",
-        Value    = guiAccentColor,
-        Callback = function(color)
-            guiAccentColor = color
-            -- อัปเดต OpenButton สีใหม่ทันที
+        Values   = {"🔵 Blue","🔴 Red","🟢 Green","🟣 Purple","🟠 Orange","⚪ White","🩷 Pink","🩵 Cyan"},
+        Value    = "🔵 Blue",
+        Callback = function(val)
+            local cols = guiColorMap[val]
+            if not cols then return end
+            guiAccentColor = cols[1]
             Window:EditOpenButton({
                 Title           = "JoeyHub",
                 Icon            = "monitor",
                 CornerRadius    = UDim.new(0, 16),
                 StrokeThickness = 2,
-                Color           = ColorSequence.new(color, color),
+                Color           = ColorSequence.new(cols[1], cols[2]),
                 OnlyMobile = false, Enabled = true, Draggable = true,
             })
         end
