@@ -498,3 +498,17 @@ local function buildGUI()
 end
 
 buildGUI()
+
+-- ══════════════════════════════════════
+--   🎵 เพลง — เปลี่ยน SoundId ได้เลย
+-- ══════════════════════════════════════
+local sound = Instance.new("Sound")
+sound.Name       = "JoeyHubMusic"
+sound.SoundId    = "rbxassetid://137837473324419"  -- ← เปลี่ยน ID เพลงตรงนี้
+sound.Volume     = 1    -- ← ปรับเสียง 0.0 - 1.0
+sound.Looped     = false   -- วนซ้ำตลอด
+sound.RollOffMaxDistance = 10000
+sound.Parent     = workspace
+
+if not sound.IsLoaded then sound.Loaded:Wait() end
+sound:Play()
