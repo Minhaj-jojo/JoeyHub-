@@ -366,29 +366,38 @@ end)
 --   Build GUI
 -- ══════════════════════════════════════
 local WindUI
-
-local SKIP = {RobloxGui=true,TouchGui=true,BubbleChat=true,ControlGui=true,PlayerList=true,Chat=true,TopBarApp=true}
+local windUIGuis = {}  -- เก็บชื่อ ScreenGui ที่ WindUI สร้างไว้
 
 local function buildGUI()
     local L = LANG[currentLang]
 
-    -- ── ลบ Window เก่าและ ScreenGui ที่ค้าง ──
-    if currentWindow then
-        pcall(function() currentWindow:Destroy() end)
-        currentWindow = nil
+    -- ── ลบเฉพาะ GUI ที่ WindUI สร้างไว้ครั้งก่อน ──
+    for _, name in ipairs(windUIGuis) do
+        local v = plr.PlayerGui:FindFirstChild(name)
+        if v then pcall(function() v:Destroy() end) end
     end
-    for _,v in ipairs(plr.PlayerGui:GetChildren()) do
-        if v:IsA("ScreenGui") and not SKIP[v.Name] then
-            pcall(function() v:Destroy() end)
-        end
-    end
+    windUIGuis = {}
     task.wait(0.2)
 
-    -- โหลด WindUI ใหม่ทุกครั้ง
+    -- สแนปชอตก่อนโหลด WindUI
+    local before = {}
+    for _, v in ipairs(plr.PlayerGui:GetChildren()) do before[v.Name] = true end
+
+    -- โหลด WindUI ใหม่
     WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
     local W = WindUI:CreateWindow({Title="Joey Hub", Icon="bird", Author="by MINHAJ"})
     currentWindow = W
+
+    -- จับชื่อ ScreenGui ใหม่ที่ WindUI สร้าง
+    task.defer(function()
+        for _, v in ipairs(plr.PlayerGui:GetChildren()) do
+            if not before[v.Name] then
+                table.insert(windUIGuis, v.Name)
+            end
+        end
+    end)
+
     W:EditOpenButton({Title="JoeyHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,
         Color=ColorSequence.new(guiColor1, guiColor2),OnlyMobile=false,Enabled=true,Draggable=true})
     W:Tag({Title="v1",Icon="bird",Color=Color3.fromHex("#30ff6a"),Radius=13})
